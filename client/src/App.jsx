@@ -14,6 +14,8 @@ export default function App() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
+  const [editingId, setEditingId] = useState(null);
+
   // ================= REGISTER =================
   const register = async () => {
     try {
@@ -52,15 +54,21 @@ export default function App() {
       const res = await API.get("/notes");
       setNotes(res.data);
     } catch {
-      logout(); // token invalid → auto logout
+      logout();
     }
   };
 
-  // ================= ADD NOTE =================
-  const addNote = async () => {
+  // ================= SAVE NOTE (ADD + EDIT) =================
+  const saveNote = async () => {
     if (!title || !content) return;
 
-    await API.post("/notes", { title, content });
+    if (editingId) {
+      await API.put(`/notes/${editingId}`, { title, content });
+      setEditingId(null);
+    } else {
+      await API.post("/notes", { title, content });
+    }
+
     setTitle("");
     setContent("");
     loadNotes();
@@ -79,27 +87,27 @@ export default function App() {
   // ================= AUTH SCREEN =================
   if (!token) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white">
-        <h1 className="text-3xl mb-6">Smart Notes 🚀</h1>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-black text-white">
+        <h1 className="text-4xl mb-6 font-bold">Smart Notes 🚀</h1>
 
         {isRegister && (
           <input
             placeholder="Username"
-            className="p-2 m-2 text-black"
+            className="p-2 m-2 text-black rounded"
             onChange={(e) => setUsername(e.target.value)}
           />
         )}
 
         <input
           placeholder="Email"
-          className="p-2 m-2 text-black"
+          className="p-2 m-2 text-black rounded"
           onChange={(e) => setEmail(e.target.value)}
         />
 
         <input
           placeholder="Password"
           type="password"
-          className="p-2 m-2 text-black"
+          className="p-2 m-2 text-black rounded"
           onChange={(e) => setPassword(e.target.value)}
         />
 
@@ -133,9 +141,9 @@ export default function App() {
 
   // ================= NOTES SCREEN =================
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black text-white p-8">
       <div className="flex justify-between items-center max-w-xl mx-auto mb-6">
-        <h1 className="text-4xl">Smart Notes 🚀</h1>
+        <h1 className="text-4xl font-bold">Smart Notes 🚀</h1>
 
         <button
           onClick={logout}
@@ -145,27 +153,42 @@ export default function App() {
         </button>
       </div>
 
-      <div className="max-w-xl mx-auto bg-slate-800 p-6 rounded">
+      <div className="max-w-xl mx-auto bg-slate-800 p-6 rounded shadow-lg">
         <input
           placeholder="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full p-2 mb-2 text-black"
+          className="w-full p-2 mb-2 text-black rounded"
         />
 
         <textarea
           placeholder="Content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="w-full p-2 mb-2 text-black"
+          className="w-full p-2 mb-2 text-black rounded"
         />
 
-        <button
-          onClick={addNote}
-          className="bg-blue-500 px-4 py-2 rounded"
-        >
-          Add Note
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={saveNote}
+            className="bg-blue-500 px-4 py-2 rounded"
+          >
+            {editingId ? "Update Note" : "Add Note"}
+          </button>
+
+          {editingId && (
+            <button
+              onClick={() => {
+                setEditingId(null);
+                setTitle("");
+                setContent("");
+              }}
+              className="bg-gray-500 px-4 py-2 rounded"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="max-w-xl mx-auto mt-6">
@@ -173,16 +196,29 @@ export default function App() {
           <p>No notes found 😢</p>
         ) : (
           notes.map((n) => (
-            <div key={n._id} className="bg-slate-800 p-4 mb-2 rounded">
+            <div key={n._id} className="bg-slate-800 p-4 mb-2 rounded shadow">
               <h2 className="font-bold">{n.title}</h2>
               <p>{n.content}</p>
 
-              <button
-                onClick={() => deleteNote(n._id)}
-                className="bg-red-500 px-3 py-1 mt-2 rounded"
-              >
-                Delete
-              </button>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() => {
+                    setTitle(n.title);
+                    setContent(n.content);
+                    setEditingId(n._id);
+                  }}
+                  className="bg-yellow-500 px-3 py-1 rounded"
+                >
+                  Edit
+                </button>
+
+                <button
+                  onClick={() => deleteNote(n._id)}
+                  className="bg-red-500 px-3 py-1 rounded"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           ))
         )}
