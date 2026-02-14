@@ -1,49 +1,55 @@
 import express from "express";
 import Note from "../models/Note.js";
-import auth from "../middleware/auth.js";
+import protect from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 
-// ================= GET NOTES (only my notes) =================
-router.get("/", auth, async (req, res) => {
+// ================= GET USER NOTES =================
+router.get("/", protect, async (req, res) => {
   try {
-    const notes = await Note.find({ user: req.user.id }).sort({ createdAt: -1 });
+    const notes = await Note.find({ user: req.user._id });
     res.json(notes);
-  } catch {
-    res.status(500).json({ message: "Failed to fetch notes ❌" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to load notes ❌" });
   }
 });
 
 
 // ================= CREATE NOTE =================
-router.post("/", auth, async (req, res) => {
+router.post("/", protect, async (req, res) => {
   try {
     const { title, content } = req.body;
 
     const note = await Note.create({
       title,
       content,
-      user: req.user.id,
+      user: req.user._id, // 🔥 IMPORTANT
     });
 
-    res.json(note);
-  } catch {
+    res.status(201).json(note);
+  } catch (err) {
     res.status(500).json({ message: "Failed to create note ❌" });
   }
 });
 
 
 // ================= DELETE NOTE =================
-router.delete("/:id", auth, async (req, res) => {
+router.delete("/:id", protect, async (req, res) => {
   try {
-    await Note.deleteOne({
+    const note = await Note.findOne({
       _id: req.params.id,
-      user: req.user.id,
+      user: req.user._id, // 🔥 ensures ownership
     });
 
-    res.json({ message: "Deleted ✅" });
-  } catch {
+    if (!note) {
+      return res.status(404).json({ message: "Note not found ❌" });
+    }
+
+    await note.deleteOne();
+
+    res.json({ message: "Note deleted ✅" });
+  } catch (err) {
     res.status(500).json({ message: "Delete failed ❌" });
   }
 });
