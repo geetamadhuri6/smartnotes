@@ -39,17 +39,36 @@ export default function App() {
     }
   };
 
+  // ================= LOGOUT =================
+  const logout = () => {
+    localStorage.removeItem("token");
+    setToken(null);
+    setNotes([]);
+  };
+
   // ================= LOAD NOTES =================
   const loadNotes = async () => {
-    const res = await API.get("/notes");
-    setNotes(res.data);
+    try {
+      const res = await API.get("/notes");
+      setNotes(res.data);
+    } catch {
+      logout(); // token invalid → auto logout
+    }
   };
 
   // ================= ADD NOTE =================
   const addNote = async () => {
+    if (!title || !content) return;
+
     await API.post("/notes", { title, content });
     setTitle("");
     setContent("");
+    loadNotes();
+  };
+
+  // ================= DELETE NOTE =================
+  const deleteNote = async (id) => {
+    await API.delete(`/notes/${id}`);
     loadNotes();
   };
 
@@ -115,7 +134,16 @@ export default function App() {
   // ================= NOTES SCREEN =================
   return (
     <div className="min-h-screen bg-slate-900 text-white p-8">
-      <h1 className="text-4xl mb-6 text-center">Smart Notes 🚀</h1>
+      <div className="flex justify-between items-center max-w-xl mx-auto mb-6">
+        <h1 className="text-4xl">Smart Notes 🚀</h1>
+
+        <button
+          onClick={logout}
+          className="bg-red-500 px-4 py-2 rounded"
+        >
+          Logout
+        </button>
+      </div>
 
       <div className="max-w-xl mx-auto bg-slate-800 p-6 rounded">
         <input
@@ -148,6 +176,13 @@ export default function App() {
             <div key={n._id} className="bg-slate-800 p-4 mb-2 rounded">
               <h2 className="font-bold">{n.title}</h2>
               <p>{n.content}</p>
+
+              <button
+                onClick={() => deleteNote(n._id)}
+                className="bg-red-500 px-3 py-1 mt-2 rounded"
+              >
+                Delete
+              </button>
             </div>
           ))
         )}
