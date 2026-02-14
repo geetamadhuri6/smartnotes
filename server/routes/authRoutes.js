@@ -1,29 +1,26 @@
 import express from "express";
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
 
 const router = express.Router();
+
 
 // ================= REGISTER =================
 router.post("/register", async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
-    const existing = await User.findOne({ email });
-    if (existing) {
+    const exists = await User.findOne({ email });
+    if (exists) {
       return res.status(400).json({ message: "User already exists ❌" });
     }
 
-    const hashed = await bcrypt.hash(password, 10);
+    const user = await User.create({ username, email, password });
 
-    await User.create({
-      username,
-      email,
-      password: hashed,
+    res.json({
+      message: "Registered successfully ✅",
+      userId: user._id,
     });
-
-    res.json({ message: "User registered successfully ✅" });
 
   } catch (err) {
     console.error(err);
@@ -31,22 +28,20 @@ router.post("/register", async (req, res) => {
   }
 });
 
+
 // ================= LOGIN =================
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
-
     if (!user) {
-      return res.status(400).json({ message: "User not found ❌" });
+      return res.status(400).json({ message: "Invalid credentials ❌" });
     }
 
-    // TEMP DEBUG LOGIN (accept plain password OR bcrypt)
-    const bcryptMatch = await bcrypt.compare(password, user.password);
-    const plainMatch = password === user.password;
+    const match = await user.comparePassword(password);
 
-    if (!bcryptMatch && !plainMatch) {
+    if (!match) {
       return res.status(400).json({ message: "Invalid credentials ❌" });
     }
 
