@@ -1,80 +1,100 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import API from "./api";
 
-function App() {
+export default function App() {
+  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
   const [notes, setNotes] = useState([]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
-  const fetchNotes = async () => {
+  const login = async () => {
+    const res = await API.post("/auth/login", { email, password });
+    localStorage.setItem("token", res.data.token);
+    setToken(res.data.token);
+    loadNotes();
+  };
+
+  const loadNotes = async () => {
     const res = await API.get("/notes");
     setNotes(res.data);
   };
-
-  useEffect(() => {
-    fetchNotes();
-  }, []);
 
   const addNote = async () => {
     await API.post("/notes", { title, content });
     setTitle("");
     setContent("");
-    fetchNotes();
+    loadNotes();
   };
 
-  const deleteNote = async (id) => {
-    await API.delete(`/notes/${id}`);
-    fetchNotes();
-  };
+  useEffect(() => {
+    if (token) loadNotes();
+  }, [token]);
+
+  if (!token) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white">
+        <h1 className="text-3xl mb-6">Smart Notes 🚀</h1>
+
+        <input
+          placeholder="Email"
+          className="p-2 m-2 text-black"
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <input
+          placeholder="Password"
+          type="password"
+          className="p-2 m-2 text-black"
+          onChange={(e) => setPassword(e.target.value)}
+        />
+
+        <button
+          onClick={login}
+          className="bg-blue-500 px-4 py-2 rounded mt-2"
+        >
+          Login
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-900 text-white p-8">
-      <h1 className="text-4xl font-bold mb-6 text-center">
-        Smart Notes 🚀
-      </h1>
+      <h1 className="text-4xl mb-6 text-center">Smart Notes 🚀</h1>
 
-      {/* Add Note Panel */}
-      <div className="bg-slate-800 p-6 rounded-xl shadow mb-8 max-w-xl mx-auto">
+      <div className="max-w-xl mx-auto bg-slate-800 p-6 rounded">
         <input
-          className="w-full mb-3 p-3 rounded bg-slate-700"
           placeholder="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          className="w-full p-2 mb-2 text-black"
         />
 
         <textarea
-          className="w-full mb-3 p-3 rounded bg-slate-700"
           placeholder="Content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
+          className="w-full p-2 mb-2 text-black"
         />
 
         <button
           onClick={addNote}
-          className="bg-blue-500 hover:bg-blue-600 px-6 py-2 rounded"
+          className="bg-blue-500 px-4 py-2 rounded"
         >
           Add Note
         </button>
       </div>
 
-      {/* Notes Grid */}
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="max-w-xl mx-auto mt-6">
         {notes.length === 0 ? (
           <p>No notes found 😢</p>
         ) : (
-          notes.map((note) => (
-            <div
-              key={note._id}
-              className="bg-slate-800 p-5 rounded-xl shadow hover:scale-105 transition"
-            >
-              <h2 className="text-xl font-bold mb-2">{note.title}</h2>
-              <p className="mb-4 text-slate-300">{note.content}</p>
-              <button
-                onClick={() => deleteNote(note._id)}
-                className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded"
-              >
-                Delete
-              </button>
+          notes.map((n) => (
+            <div key={n._id} className="bg-slate-800 p-4 mb-2 rounded">
+              <h2 className="font-bold">{n.title}</h2>
+              <p>{n.content}</p>
             </div>
           ))
         )}
@@ -82,5 +102,3 @@ function App() {
     </div>
   );
 }
-
-export default App;

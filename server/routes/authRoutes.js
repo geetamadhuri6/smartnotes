@@ -27,7 +27,7 @@ router.post("/register", async (req, res) => {
 });
 
 
-// ================= LOGIN (JWT) =================
+// ================= LOGIN =================
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -37,27 +37,24 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials ❌" });
     }
 
-    // Plain text check (for now)
     if (password !== user.password) {
       return res.status(400).json({ message: "Invalid credentials ❌" });
     }
 
-    // ✅ CREATE TOKEN
     const token = jwt.sign(
       { id: user._id },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
 
-    res.status(200).json({
+    res.json({
       message: "Login successful ✅",
       token,
     });
-
   } catch (err) {
+    console.log(err);
     res.status(500).json({ message: "Server error ❌" });
   }
 });
-
 
 export default router;
