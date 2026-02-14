@@ -33,25 +33,20 @@ router.post("/register", async (req, res) => {
 
 // ================= LOGIN =================
 router.post("/login", async (req, res) => {
-  console.log("LOGIN ATTEMPT:", req.body);
-
   try {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
 
     if (!user) {
-      console.log("USER NOT FOUND");
-      return res.status(400).json({ message: "Invalid credentials ❌" });
+      return res.status(400).json({ message: "User not found ❌" });
     }
 
-    console.log("DB PASSWORD:", user.password);
+    // TEMP DEBUG LOGIN (accept plain password OR bcrypt)
+    const bcryptMatch = await bcrypt.compare(password, user.password);
+    const plainMatch = password === user.password;
 
-    const match = await bcrypt.compare(password, user.password);
-
-    console.log("MATCH RESULT:", match);
-
-    if (!match) {
+    if (!bcryptMatch && !plainMatch) {
       return res.status(400).json({ message: "Invalid credentials ❌" });
     }
 
@@ -61,13 +56,15 @@ router.post("/login", async (req, res) => {
       { expiresIn: "1d" }
     );
 
-    res.json({ message: "Login successful ✅", token });
+    res.json({
+      message: "Login successful ✅",
+      token,
+    });
 
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error ❌" });
   }
 });
-
 
 export default router;
