@@ -1,23 +1,23 @@
 import express from "express";
 import Note from "../models/Note.js";
-import protect from "../middleware/authMiddleware.js";
+import auth from "../middleware/auth.js";
 
 const router = express.Router();
 
 
-// ================= GET NOTES (ONLY USER) =================
-router.get("/", protect, async (req, res) => {
+// ================= GET NOTES (only my notes) =================
+router.get("/", auth, async (req, res) => {
   try {
-    const notes = await Note.find({ user: req.user.id });
+    const notes = await Note.find({ user: req.user.id }).sort({ createdAt: -1 });
     res.json(notes);
-  } catch (error) {
-    res.status(500).json({ message: "Server error ❌" });
+  } catch {
+    res.status(500).json({ message: "Failed to fetch notes ❌" });
   }
 });
 
 
 // ================= CREATE NOTE =================
-router.post("/", protect, async (req, res) => {
+router.post("/", auth, async (req, res) => {
   try {
     const { title, content } = req.body;
 
@@ -27,49 +27,24 @@ router.post("/", protect, async (req, res) => {
       user: req.user.id,
     });
 
-    res.json({
-      message: "Note created ✅",
-      note,
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Error creating note ❌" });
-  }
-});
-
-
-// ================= UPDATE NOTE =================
-router.put("/:id", protect, async (req, res) => {
-  try {
-    const note = await Note.findOneAndUpdate(
-      { _id: req.params.id, user: req.user.id },
-      req.body,
-      { new: true }
-    );
-
-    if (!note)
-      return res.status(404).json({ message: "Note not found ❌" });
-
     res.json(note);
-  } catch (error) {
-    res.status(500).json({ message: "Error updating note ❌" });
+  } catch {
+    res.status(500).json({ message: "Failed to create note ❌" });
   }
 });
 
 
 // ================= DELETE NOTE =================
-router.delete("/:id", protect, async (req, res) => {
+router.delete("/:id", auth, async (req, res) => {
   try {
-    const note = await Note.findOneAndDelete({
+    await Note.deleteOne({
       _id: req.params.id,
       user: req.user.id,
     });
 
-    if (!note)
-      return res.status(404).json({ message: "Note not found ❌" });
-
-    res.json({ message: "Note deleted ✅" });
-  } catch (error) {
-    res.status(500).json({ message: "Error deleting note ❌" });
+    res.json({ message: "Deleted ✅" });
+  } catch {
+    res.status(500).json({ message: "Delete failed ❌" });
   }
 });
 
