@@ -33,17 +33,23 @@ router.post("/register", async (req, res) => {
 
 // ================= LOGIN =================
 router.post("/login", async (req, res) => {
-  console.log("LOGIN ROUTE HIT");
+  console.log("LOGIN ATTEMPT:", req.body);
+
   try {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
 
     if (!user) {
+      console.log("USER NOT FOUND");
       return res.status(400).json({ message: "Invalid credentials ❌" });
     }
 
+    console.log("DB PASSWORD:", user.password);
+
     const match = await bcrypt.compare(password, user.password);
+
+    console.log("MATCH RESULT:", match);
 
     if (!match) {
       return res.status(400).json({ message: "Invalid credentials ❌" });
@@ -55,15 +61,13 @@ router.post("/login", async (req, res) => {
       { expiresIn: "1d" }
     );
 
-    res.json({
-      message: "Login successful ✅",
-      token,
-    });
+    res.json({ message: "Login successful ✅", token });
 
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error ❌" });
   }
 });
+
 
 export default router;
