@@ -3,6 +3,10 @@ import API from "./api";
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
+
+  const [isRegister, setIsRegister] = useState(false);
+
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -10,18 +14,38 @@ export default function App() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
-  const login = async () => {
-    const res = await API.post("/auth/login", { email, password });
-    localStorage.setItem("token", res.data.token);
-    setToken(res.data.token);
-    loadNotes();
+  // ================= REGISTER =================
+  const register = async () => {
+    try {
+      await API.post("/auth/register", { username, email, password });
+      alert("Registered successfully ✅ Now login");
+      setIsRegister(false);
+    } catch (err) {
+      alert(err.response?.data?.message || "Register failed ❌");
+    }
   };
 
+  // ================= LOGIN =================
+  const login = async () => {
+    try {
+      const res = await API.post("/auth/login", { email, password });
+
+      localStorage.setItem("token", res.data.token);
+      setToken(res.data.token);
+
+      alert("Login success ✅");
+    } catch (err) {
+      alert(err.response?.data?.message || "Login failed ❌");
+    }
+  };
+
+  // ================= LOAD NOTES =================
   const loadNotes = async () => {
     const res = await API.get("/notes");
     setNotes(res.data);
   };
 
+  // ================= ADD NOTE =================
   const addNote = async () => {
     await API.post("/notes", { title, content });
     setTitle("");
@@ -33,16 +57,26 @@ export default function App() {
     if (token) loadNotes();
   }, [token]);
 
+  // ================= AUTH SCREEN =================
   if (!token) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white">
         <h1 className="text-3xl mb-6">Smart Notes 🚀</h1>
+
+        {isRegister && (
+          <input
+            placeholder="Username"
+            className="p-2 m-2 text-black"
+            onChange={(e) => setUsername(e.target.value)}
+          />
+        )}
 
         <input
           placeholder="Email"
           className="p-2 m-2 text-black"
           onChange={(e) => setEmail(e.target.value)}
         />
+
         <input
           placeholder="Password"
           type="password"
@@ -50,16 +84,35 @@ export default function App() {
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <button
-          onClick={login}
-          className="bg-blue-500 px-4 py-2 rounded mt-2"
+        {isRegister ? (
+          <button
+            onClick={register}
+            className="bg-green-500 px-4 py-2 rounded mt-2"
+          >
+            Register
+          </button>
+        ) : (
+          <button
+            onClick={login}
+            className="bg-blue-500 px-4 py-2 rounded mt-2"
+          >
+            Login
+          </button>
+        )}
+
+        <p
+          className="mt-4 cursor-pointer text-blue-400"
+          onClick={() => setIsRegister(!isRegister)}
         >
-          Login
-        </button>
+          {isRegister
+            ? "Already have account? Login"
+            : "New user? Register"}
+        </p>
       </div>
     );
   }
 
+  // ================= NOTES SCREEN =================
   return (
     <div className="min-h-screen bg-slate-900 text-white p-8">
       <h1 className="text-4xl mb-6 text-center">Smart Notes 🚀</h1>
