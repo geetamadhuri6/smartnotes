@@ -8,7 +8,11 @@ const router = express.Router();
 // ================= GET USER NOTES =================
 router.get("/", protect, async (req, res) => {
   try {
-    const notes = await Note.find({ user: req.user._id });
+    console.log("User requesting notes:", req.user._id);
+
+    const notes = await Note.find({ user: req.user._id })
+      .sort({ createdAt: -1 });
+
     res.json(notes);
   } catch (err) {
     res.status(500).json({ message: "Failed to load notes ❌" });
@@ -24,7 +28,7 @@ router.post("/", protect, async (req, res) => {
     const note = await Note.create({
       title,
       content,
-      user: req.user._id, // 🔥 IMPORTANT
+      user: req.user._id,
     });
 
     res.status(201).json(note);
@@ -37,16 +41,14 @@ router.post("/", protect, async (req, res) => {
 // ================= DELETE NOTE =================
 router.delete("/:id", protect, async (req, res) => {
   try {
-    const note = await Note.findOne({
+    const note = await Note.findOneAndDelete({
       _id: req.params.id,
-      user: req.user._id, // 🔥 ensures ownership
+      user: req.user._id,
     });
 
     if (!note) {
       return res.status(404).json({ message: "Note not found ❌" });
     }
-
-    await note.deleteOne();
 
     res.json({ message: "Note deleted ✅" });
   } catch (err) {
