@@ -1,5 +1,17 @@
 {
+  "name": "smartnotes-root",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && nodemon index.js",
+    "client": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "start": "cd server && node index.js"
+  },
   "dependencies": {
-    "bcryptjs": "^3.0.3"
+    "moment": "^2.30.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

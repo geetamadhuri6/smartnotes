@@ -23,18 +23,30 @@ router.get("/", protect, async (req, res) => {
 // ================= CREATE NOTE =================
 router.post("/", protect, async (req, res) => {
   try {
-    const { title, content } = req.body;
+    const { title, content, tags } = req.body;
 
     const note = await Note.create({
       title,
       content,
+      tags,
       user: req.user._id,
     });
 
     res.status(201).json(note);
-  } catch (err) {
-    res.status(500).json({ message: "Failed to create note ❌" });
+  } catch {
+    res.status(500).json({ message: "Failed ❌" });
   }
+});
+router.put("/:id", protect, async (req, res) => {
+  const { title, content, tags } = req.body;
+
+  const note = await Note.findOneAndUpdate(
+    { _id: req.params.id, user: req.user._id },
+    { title, content, tags },
+    { new: true }
+  );
+
+  res.json(note);
 });
 
 
